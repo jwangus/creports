@@ -1,5 +1,5 @@
 # Reporting Server
-It runs scheduled tasks than fetch data, analyze the data and create reports
+It runs scheduled tasks.
 
 ## Deployment To Heroku
 ### required Files

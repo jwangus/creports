@@ -30,6 +30,15 @@ def save_eth_price():
     return px_file_name
 
 
+def load_data(tx_file_name, pool_addr):
+    tx = pd.read_csv(tx_file_name,
+                     usecols=['timeStamp', 'value', 'gasPrice', 'gasUsed', 'from'],
+                     converters={'value': int})
+    flt = (tx['from'] == pool_addr)
+    return (tx.loc[flt],
+            pd.read_csv("resources/ETH-USD.csv", usecols=['Date', 'Adj Close']))
+
+
 def prepare_calc_df(tx, px, step_seconds=600):
     # calculate average
     # t0,  t1 - t0             v1
