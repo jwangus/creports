@@ -1,6 +1,6 @@
 import datetime
 import math
-import secrets
+import _secrets
 import pandas as pd
 
 import creport_email
@@ -143,7 +143,7 @@ def customer_report(wallet, pool_wallet, to_email, period_end_date, period_days=
               "num_days": period_days
               }
     creport_email.send_html(report_html(params), to_email,
-                            secrets.email_config.default_from_addr,
+                            _secrets.email_config.default_from_addr,
                             'Crypto Mining Report'
                             )
 
@@ -167,8 +167,8 @@ def run_monthly_reports():
 
 
 if __name__ == '__main__':
-    customer_report(secrets.MY_WALLET,
-                    secrets.POOL_WALLET,
-                    secrets.email_config.default_to_addr,
+    customer_report(_secrets.MY_WALLET,
+                    _secrets.POOL_WALLET,
+                    _secrets.email_config.default_to_addr,
                     datetime.date(2021, 3, 15)
                     )

@@ -1,5 +1,5 @@
 
-import secrets
+import _secrets
 import requests
 import pandas as pd
 import yfinance as yf
@@ -9,7 +9,7 @@ import datetime
 
 def save_trans(wallet):
     payload = {"module": "account", "action": "txlist", "address": wallet, "startblock": 0000000, "endblock": 99999999,
-               "sort": "asc", "apikey": secrets.ETHERSCAN_API_KEY}
+               "sort": "asc", "apikey": _secrets.ETHERSCAN_API_KEY}
     # startblock 10000000 is used, older wallets crash because etherscan used to save their data differently
 
     r = requests.get("https://api.etherscan.io/api", params=payload)
@@ -75,7 +75,7 @@ def compute_improved(calc_df, start_timestamp, end_timestamp, elec_cost=0, other
 
 if __name__ == '__main__':
     # test code
-    trans = save_trans(secrets.MY_WALLET)
+    trans = save_trans(_secrets.MY_WALLET)
     price = save_eth_price()
 
     calc_dataframe = prepare_calc_df(trans, price)

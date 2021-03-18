@@ -1,4 +1,4 @@
-from secrets import email_config as conf
+from _secrets import email_config as conf
 import smtplib
 from email.message import EmailMessage
 
