@@ -68,19 +68,22 @@ def analysis(hqm_df):
         hqm_df.loc[row, 'hqm_score'] = mean(momentum_percentiles)
 
     hqm_df.sort_values('hqm_score', ascending=False, inplace=True)
-    hqm_df = hqm_df[:50]
     hqm_df.reset_index(inplace=True)
     return hqm_df
 
 
-if __name__ == '__main__':
-    etfs = pd.read_csv('resources/eft_sector.csv')
+def calc_hqm_matrix():
+    symbols = pd.read_csv('resources/my_symbols.csv')
 
-    df = get_data(etfs['symbol'])
+    df = get_data(symbols['symbol'])
 
     hqm_dataframe = analysis(df)
-    final_df = pd.merge(hqm_dataframe, etfs, on='symbol')
+    final_df = pd.merge(hqm_dataframe, symbols, on='symbol')
 
     print(final_df)
 
     final_df.to_csv(f'resources/hqm_{datetime.date.today()}.csv')
+
+
+if __name__ == '__main__':
+    calc_hqm_matrix()

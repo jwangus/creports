@@ -4,6 +4,7 @@ import time
 import schedule
 
 import mining_report
+import high_quality_momentum
 
 
 def mining_reports():
@@ -19,9 +20,12 @@ def mining_reports():
     print('completed mining reports')
 
 
-def etf_sector_momentum_report():
-    print('running etf sector momentum report')
-    print('completed etf sector momentum report')
+def momentum_report():
+    today = datetime.date.today()
+    if today.weekday():
+        print('running momentum report')
+        high_quality_momentum.calc_hqm_matrix()
+        print('completed momentum report')
 
 
 def print_heartbeat():
@@ -31,6 +35,7 @@ def print_heartbeat():
 def setup_task():
     schedule.every().monday.at("19:00").do(mining_reports)
     schedule.every(3).minutes.do(print_heartbeat)
+    schedule.every().day.at('22:17').do(momentum_report)
 
 
 def run():
