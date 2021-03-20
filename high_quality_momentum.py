@@ -8,8 +8,7 @@ from scipy import stats
 
 
 def get_data(symbols):
-    symbol_str = ','.join(symbols)
-    api_url = f'https://sandbox.iexapis.com/stable/stock/market/batch'
+    api_url = f'https://cloud.iexapis.com/stable/stock/market/batch'
 
     my_cols = ['symbol', 'price',
                '1y_return', '1y_return_percentile',
