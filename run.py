@@ -34,9 +34,9 @@ def print_heartbeat():
 
 def setup_task():
     schedule.every().monday.at("19:00").do(mining_reports)
-    schedule.every().day.at('20:05').do(momentum_report)
+    schedule.every().day.at('20:30').do(momentum_report)
 
-    schedule.every(3).minutes.do(print_heartbeat)
+    schedule.every(60).minutes.do(print_heartbeat)
 
 
 def run():
