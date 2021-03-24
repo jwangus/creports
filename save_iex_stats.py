@@ -66,9 +66,9 @@ def _create_insert_stats_sql(r):
         {r['ttmEPS']},
         {r['ttmDividendRate']},
         {r['dividendYield']},
-        {r['nextDividendDate']},
-        {r['exDividendDate']},
-        {r['nextEarningsDate']},
+        '{r['nextDividendDate']}',
+        '{r['exDividendDate']}',
+        '{r['nextEarningsDate']}',
         {r['peRatio']},
         {r['beta']},
         {r['maxChangePercent']},
@@ -109,9 +109,17 @@ def save_iex_stats_to_db(symbols):
         for s in symbol_chunk:
             print(s)
             r = data[s]['stats']
+            # change some data to format the insert stmt.
+            for k in r:
+                if k.endswith('Date'):
+                    if r[k] == '0':
+                        r[k] = '1970-01-01'
+                r[k] = r[k] if r[k] else 'NULL'
+
             r['symbol'] = s
             r['as_of'] = str(as_of_date)
             r['dt_saved'] = str(timestamp)
+
             statement = _create_insert_stats_sql(r)
             print(statement)
             cursor.execute(statement)
