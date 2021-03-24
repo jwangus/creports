@@ -112,7 +112,7 @@ def save_iex_stats_to_db(symbols):
             # change some data to format the insert stmt.
             for k in r:
                 if k.endswith('Date'):
-                    if r[k] == '0':
+                    if r[k] == '0' or not r[k]:
                         r[k] = '1970-01-01'
                 r[k] = r[k] if r[k] else 'NULL'
 
