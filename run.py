@@ -5,6 +5,7 @@ import schedule
 
 import mining_report
 import high_quality_momentum
+import save_iex_stats
 
 
 def mining_reports():
@@ -25,7 +26,10 @@ def momentum_report():
     if today.weekday():
         print('running momentum report')
         high_quality_momentum.calc_hqm_matrix()
-        print('completed momentum report')
+        print('saving iex stats to db report')
+        save_iex_stats.save_my_symbols_to_db()
+        print("all done!")
+
 
 
 def print_heartbeat():
