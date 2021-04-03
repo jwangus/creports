@@ -60,7 +60,7 @@ def _request_stats(symbols):
 def _save_to_iex_stats(req_results, as_of, dt_saved):
     engine = create_engine(DB_URI)
     # read symbol -> symbol_id mapping
-    symbols = pd.read_sql_table('symbols', con=engine, index_col='symbol', columns=['id'], )
+    symbols = pd.read_sql_table('symbol_view', con=engine, index_col='symbol', columns=['symbol_id'], )
 
     # 1. create an empty datafrom by selecting all columns from iex_stats table
     df = pd.read_sql_query("select * from iex_stats where false", con=engine)
@@ -72,11 +72,10 @@ def _save_to_iex_stats(req_results, as_of, dt_saved):
         for r_k in row:
             dt_row[r_k.lower()] = row[r_k]
 
-        dt_row['symbol_id'] = symbols.loc[symbol]['id']
+        dt_row['symbol_id'] = symbols.loc[symbol]['symbol_id']
         df = df.append(dt_row, ignore_index=True)
 
     # 3. clean up the dataframe before saving to iex_stats table
-    del df['id']
     del df['float']
     del df['nextdividenddate']
 
@@ -84,5 +83,5 @@ def _save_to_iex_stats(req_results, as_of, dt_saved):
 
 
 if __name__ == "__main__":
-    # save_stats(['AAPL'])
-    save_all_symbols()
+    save_stats(['AAPL'])
+    # save_all_symbols()
