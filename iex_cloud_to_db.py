@@ -81,7 +81,8 @@ def _save_to_iex_stats(req_results, as_of, dt_saved):
     date_cols = ['nextdividenddate', 'nextearningsdate', 'exdividenddate']
     for i in df.index:
         for c in date_cols:
-            if df.loc[i, c] == '0':
+            # if its empty string or '0' then sent it to NA
+            if not df.loc[i, c] or df.loc[i, c] == '0':
                 df.loc[i, c] = pd.NA
 
     df.to_sql('iex_stats', con=engine, if_exists='append', index=False)
