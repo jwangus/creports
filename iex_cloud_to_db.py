@@ -77,7 +77,12 @@ def _save_to_iex_stats(req_results, as_of, dt_saved):
 
     # 3. clean up the dataframe before saving to iex_stats table
     del df['float']
-    del df['nextdividenddate']
+    # 3.1 clen up date columns.
+    date_cols = ['nextdividenddate', 'nextearningsdate', 'exdividenddate']
+    for i in df.index:
+        for c in date_cols:
+            if df.loc[i, c] == '0':
+                df.loc[i, c] = pd.NA
 
     df.to_sql('iex_stats', con=engine, if_exists='append', index=False)
 

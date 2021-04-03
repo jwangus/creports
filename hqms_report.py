@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import create_engine
+from iex_cloud_to_db import save_stats
 
 from _secrets import DB_URI
 
@@ -17,5 +18,14 @@ def save_symbols_for_hqm_score():
     df2.to_sql('hqms_report_inputs', con=engine, index=False, if_exists='append')
 
 
+def fetch_report_symbol_stats():
+    engine = create_engine(DB_URI)
+    query = "select distinct symbol from hqms_report_inputs_view"
+    symbols = pd.read_sql_query(query, con=engine)
+
+    save_stats(symbols['symbol'])
+
+
 if __name__ == '__main__':
-    save_symbols_for_hqm_score()
+    # save_symbols_for_hqm_score()
+    fetch_report_symbol_stats()
