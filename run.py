@@ -3,9 +3,8 @@ import time
 
 import schedule
 
+import hqms_report
 import mining_report
-import high_quality_momentum
-import save_iex_stats
 
 
 def mining_reports():
@@ -24,12 +23,11 @@ def mining_reports():
 def momentum_report():
     today = datetime.date.today()
     if today.weekday():
+        print('requesting stats and save to db')
+        hqms_report.fetch_report_symbol_stats()
         print('running momentum report')
-        high_quality_momentum.calc_hqm_matrix()
-        print('saving iex stats to db report')
-        save_iex_stats.save_my_symbols_to_db()
+        hqms_report.calc_hqm_matrix()
         print("all done!")
-
 
 
 def print_heartbeat():
