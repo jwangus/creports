@@ -16,6 +16,7 @@ def save_all_symbols():
     else:
         print(f'error requesting stats.  status_code = {req_results.status_code}')
 
+
 def _save_to_symbol(symbols):
     df = pd.DataFrame(symbols)
     # 1. rename the columns to lower case
@@ -68,7 +69,7 @@ def _save_to_iex_stats(req_results, as_of, dt_saved):
     for symbol in req_results:
         row = req_results[symbol]['stats']
         # create a new dict with lower key
-        dt_row = {'as_of' : as_of, 'dt_saved': dt_saved}
+        dt_row = {'as_of': as_of, 'dt_saved': dt_saved}
         for r_k in row:
             dt_row[r_k.lower()] = row[r_k]
 
