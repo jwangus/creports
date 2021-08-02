@@ -51,6 +51,9 @@ class CongressStockDisclose:
         df_current = pd.read_csv(self._master_file_path, sep='\t')
         # add new column
         df_current['DocLink'] = df_current['DocID'].apply(self.get_doc_link)
+        # replace NA with blank string
+        df_current.fillna('', inplace=True)
+        df_current.drop(columns=['Suffix', 'Year'], inplace=True)
 
         df_latest = pd.read_csv(self._latest_master_file_path, sep='\t', index_col='DocID')
 
@@ -58,9 +61,13 @@ class CongressStockDisclose:
         return df_current.loc[mask]
 
     def save_current_master_file(self):
-        if not os.path.exists(self._latest_master_file_path) and os.path.exists(self._master_file_path):
-            os.rename(self._master_file_path,
-                      self._latest_master_file_path)
+        if os.path.exists(self._master_file_path):
+            if os.path.exists(self._latest_master_file_path):
+                # the master file has been saved. Don't save it just delete it.
+                os.remove(self._master_file_path)
+            else:
+                os.rename(self._master_file_path,
+                          self._latest_master_file_path)
 
 
 if __name__ == '__main__':
