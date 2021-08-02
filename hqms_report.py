@@ -68,6 +68,6 @@ def fetch_report_symbol_stats():
 
 
 if __name__ == '__main__':
-    # save_symbols_for_hqm_score()
+    save_symbols_for_hqm_score()
     # fetch_report_symbol_stats()
-    calc_hqm_matrix()
+    # calc_hqm_matrix()
