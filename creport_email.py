@@ -8,7 +8,7 @@ def send_html(html_msg, to_addr, from_addr, subject, bcc_addr=[]):
     msg['Subject'] = subject
     msg['from'] = from_addr
     msg['to'] = to_addr
-    msg['cc'] = ", ".join(bcc_addr)
+    msg['bcc'] = ", ".join(bcc_addr)
     msg.set_content('Good Morning in plain text')
     msg.add_alternative(html_msg, subtype='html')
 
