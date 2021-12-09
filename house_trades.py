@@ -96,6 +96,7 @@ if __name__ == '__main__':
     </style>
     </head>
     {new_trades_html_table}
+    <p>The daily report is run at 9:05am on a weekday.  Let me know if you want to be removed.  Thank you and happy trading!</p>
     </body>
     </html>
     """
