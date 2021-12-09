@@ -6,7 +6,7 @@ from datetime import date
 import pandas as pd
 import requests
 
-from _secrets import MY_EMAIL
+from _secrets import MY_EMAIL, BCC_CONGRESS_TRADES
 from creport_email import send_html
 
 
@@ -49,6 +49,8 @@ class CongressStockDisclose:
     # compare with previous version and find any newly reported trades
     def find_new_trades(self):
         df_current = pd.read_csv(self._master_file_path, sep='\t')
+        # filter out any type other than P
+        df_current = df_current.loc[df_current['FilingType']=='P']
         # add new column
         df_current['DocLink'] = df_current['DocID'].apply(self.get_doc_link)
         # replace NA with blank string
@@ -97,4 +99,4 @@ if __name__ == '__main__':
     </body>
     </html>
     """
-    send_html(html_text, MY_EMAIL, MY_EMAIL, 'Congress Disclosed New Trades')
+    send_html(html_text, MY_EMAIL, MY_EMAIL, 'Congress Disclosed New Trades', BCC_CONGRESS_TRADES)
