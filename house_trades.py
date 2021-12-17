@@ -74,7 +74,7 @@ class CongressStockDisclose:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='house_trades.log', format='%(asctime)s - %(message)s', level=logging.INFO)
+    logging.basicConfig(filename='house_trades_app.log', format='%(asctime)s - %(message)s', level=logging.INFO)
     logging.INFO('===============>Begin<===============')
     cd = CongressStockDisclose()
     cd.save_current_master_file()
