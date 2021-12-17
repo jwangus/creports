@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path
 import zipfile
@@ -50,7 +51,7 @@ class CongressStockDisclose:
     def find_new_trades(self):
         df_current = pd.read_csv(self._master_file_path, sep='\t')
         # filter out any type other than P
-        df_current = df_current.loc[df_current['FilingType']=='P']
+        df_current = df_current.loc[df_current['FilingType'] == 'P']
         # add new column
         df_current['DocLink'] = df_current['DocID'].apply(self.get_doc_link)
         # replace NA with blank string
@@ -73,6 +74,8 @@ class CongressStockDisclose:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='house_trades.log', format='%(asctime)s - %(message)s', level=logging.INFO)
+    logging.INFO('===============>Begin<===============')
     cd = CongressStockDisclose()
     cd.save_current_master_file()
     cd.download_zip_file()
@@ -100,4 +103,6 @@ if __name__ == '__main__':
     </body>
     </html>
     """
+    logging.INFO('Sending emails. Number of emails in the bcc %s', str(len(BCC_CONGRESS_TRADES)))
     send_html(html_text, MY_EMAIL, MY_EMAIL, 'Congress Disclosed New Trades', BCC_CONGRESS_TRADES)
+    logging.INFO('===============>End<===============')
