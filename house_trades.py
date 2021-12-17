@@ -75,7 +75,7 @@ class CongressStockDisclose:
 
 if __name__ == '__main__':
     logging.basicConfig(filename='house_trades_app.log', format='%(asctime)s - %(message)s', level=logging.INFO)
-    logging.INFO('===============>Begin<===============')
+    logging.info('===============>Begin<===============')
     cd = CongressStockDisclose()
     cd.save_current_master_file()
     cd.download_zip_file()
@@ -103,6 +103,6 @@ if __name__ == '__main__':
     </body>
     </html>
     """
-    logging.INFO('Sending emails. Number of emails in the bcc %s', str(len(BCC_CONGRESS_TRADES)))
+    logging.info('Sending emails. Number of emails in the bcc %s', str(len(BCC_CONGRESS_TRADES)))
     send_html(html_text, MY_EMAIL, MY_EMAIL, 'Congress Disclosed New Trades', BCC_CONGRESS_TRADES)
-    logging.INFO('===============>End<===============')
+    logging.info('===============>End<===============')
