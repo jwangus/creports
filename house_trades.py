@@ -78,8 +78,11 @@ if __name__ == '__main__':
     logging.info('===============>Begin<===============')
     cd = CongressStockDisclose()
     cd.save_current_master_file()
+    logging.info('1. current master file saved.')
     cd.download_zip_file()
+    logging.info('2. new master file downloaded.')
     cd.unzip_master_file()
+    logging.info('3. unzipped new master file.')
 
     new_trades_html_table = cd.find_new_trades().to_html()
 
@@ -103,6 +106,6 @@ if __name__ == '__main__':
     </body>
     </html>
     """
-    logging.info('Sending emails. Number of emails in the bcc %s', str(len(BCC_CONGRESS_TRADES)))
+    logging.info('4. Sending emails. Number of emails in the bcc %s', str(len(BCC_CONGRESS_TRADES)))
     send_html(html_text, MY_EMAIL, MY_EMAIL, 'Congress Disclosed New Trades', BCC_CONGRESS_TRADES)
     logging.info('===============>End<===============')
