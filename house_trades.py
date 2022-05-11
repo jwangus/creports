@@ -1,14 +1,15 @@
 import logging
 import os
-import os.path
 import zipfile
 from datetime import date
 
 import pandas as pd
 import requests
 
-from _secrets import MY_EMAIL, BCC_CONGRESS_TRADES
+from _secrets import MY_EMAIL, BCC_CONGRESS_TRADES, REPORTS_FOLDER, LOG_FOLDER
 from creport_email import send_html
+
+from creports_utils import previous_weekday
 
 
 # save the latest master file, FD.txt by appending today date to the name, FD_2021-07-27.txt
@@ -27,9 +28,12 @@ class CongressStockDisclose:
         self._master_file_url = f'{self.url_base}/financial-pdfs/{year}FD.ZIP'
         self._disclose_pdf_url = f'{self.url_base}/ptr-pdfs/{year}/'
 
-        self._zip_file_path = os.path.join(self.resource_dir, f'{year}CongressTrades.zip')
-        self._master_file_path = os.path.join(self.resource_dir, self.master_file_name)
-        self._latest_master_file_path = os.path.join(self.resource_dir, f'FD_{self._today}.txt')
+        self._zip_file_path = os.path.join(
+            self.resource_dir, f'{year}CongressTrades.zip')
+        self._master_file_path = os.path.join(
+            self.resource_dir, self.master_file_name)
+        self._latest_master_file_path = os.path.join(
+            self.resource_dir, f'FD_{self._today}.txt')
 
     def download_zip_file(self):
         with requests.get(self._master_file_url, stream=True) as r:
@@ -58,7 +62,8 @@ class CongressStockDisclose:
         df_current.fillna('', inplace=True)
         df_current.drop(columns=['Suffix', 'Year'], inplace=True)
 
-        df_latest = pd.read_csv(self._latest_master_file_path, sep='\t', index_col='DocID')
+        df_latest = pd.read_csv(
+            self._latest_master_file_path, sep='\t', index_col='DocID')
 
         mask = [docId not in df_latest.index for docId in df_current['DocID']]
         return df_current.loc[mask]
@@ -74,7 +79,8 @@ class CongressStockDisclose:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='house_trades_app.log', format='%(asctime)s - %(message)s', level=logging.INFO)
+    logging.basicConfig(filename=os.path.join(LOG_FOLDER, 'house_trades_app.log'),
+                        format='%(asctime)s - %(message)s', level=logging.INFO)
     logging.info('===============>Begin<===============')
     cd = CongressStockDisclose()
     cd.save_current_master_file()
@@ -84,7 +90,17 @@ if __name__ == '__main__':
     cd.unzip_master_file()
     logging.info('3. unzipped new master file.')
 
-    new_trades_html_table = cd.find_new_trades().to_html()
+    df_new_trades = cd.find_new_trades()
+    new_trades_html_table = df_new_trades.to_html()
+
+    report_date = previous_weekday()
+    filename = os.path.join(
+        REPORTS_FOLDER, f"congress_trades_{report_date}")
+
+    logging.info(f'4. saving file: {filename}.html and {filename}.csv')
+    df_new_trades.to_csv(filename+".csv")
+    with open(filename+".html", "w") as f:
+        f.write(new_trades_html_table)
 
     html_text = f"""\
     <!DOCTYPE html>
@@ -106,6 +122,8 @@ if __name__ == '__main__':
     </body>
     </html>
     """
-    logging.info('4. Sending emails. Number of emails in the bcc %s', str(len(BCC_CONGRESS_TRADES)))
-    send_html(html_text, MY_EMAIL, MY_EMAIL, 'Congress Disclosed New Trades', BCC_CONGRESS_TRADES)
+    logging.info('5. Sending emails. Number of emails in the bcc %s',
+                 str(len(BCC_CONGRESS_TRADES)))
+    send_html(html_text, MY_EMAIL, MY_EMAIL,
+              'Congress Disclosed New Trades', BCC_CONGRESS_TRADES)
     logging.info('===============>End<===============')

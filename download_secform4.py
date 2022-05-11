@@ -1,7 +1,7 @@
 import logging
 import os
 from _secrets import LOG_FOLDER
-from secfillings import download_form4, previous_weekday
+from secfilings import download_form4, previous_weekday
 
 if __name__ == '__main__':
     logging.basicConfig(filename=os.path.join(LOG_FOLDER, 'download_secform4.log'),
