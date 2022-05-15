@@ -4,7 +4,7 @@ from secedgar import DailyFilings
 from secedgar.client import NetworkClient
 from secedgar.parser import MetaParser
 from creports_utils import previous_weekday
-from _secrets import USER_AGENT_EMAIL, SEC_FILINGS_REPO_FOLDER
+from _secrets import USER_AGENT_EMAIL, SEC_FILINGS_REPO_FOLDER, SP500_COMPANY_CSV
 import xml.etree.ElementTree as ET
 import dateutil.parser
 import pandas as pd
@@ -37,6 +37,8 @@ def process_download(report_date):
     p = MetaParser()
     for f in all_filings:
         p.process(f)
+
+    return len(all_filings)
 
 
 def find_all_filing_files(report_date, file_extension='txt'):
@@ -86,14 +88,15 @@ def parse_form4_xml(s, filename):
         s["name"].append(name)
         s["relationship"].append(relationship)
         s["title"].append(title)
-        
+
         s["tx_date"].append(dateutil.parser.isoparse(e_tx_date.text).date())
         s["tx_code"].append(e_tx_code.text)
         e = ele.find("./transactionAmounts/transactionShares/value")
         s["tx_share"].append(None if e is None else float(e.text))
         e = ele.find("./transactionAmounts/transactionPricePerShare/value")
         s["tx_price"].append(None if e is None else float(e.text))
-        v = ele.find("./postTransactionAmounts/sharesOwnedFollowingTransaction/value").text
+        v = ele.find(
+            "./postTransactionAmounts/sharesOwnedFollowingTransaction/value").text
         s["share_post_tx"].append(float(v))
 
 
@@ -106,7 +109,7 @@ def generate_daily_summary_report_data(report_date):
 
     # sometimes, identicle form 4 would appear under owner's CIK and company's CIK.
     # So we want to filter out the duplicate.
-    folder_seen=[]
+    folder_seen = []
     for filename in all_form4_xml:
         folder_name = os.path.basename(os.path.dirname(filename))
         if folder_name not in folder_seen:
@@ -117,7 +120,8 @@ def generate_daily_summary_report_data(report_date):
 
 
 def capitalize_word(n):
-    donot_cap_words = ["VP", "EVP", "CEO", "II", "III", "CFO"]
+    donot_cap_words = ["VP", "EVP", "CEO", "II",
+                       "III", "CFO", "SVP", "C.E.O", "CCO"]
     return ' '.join(i if i in donot_cap_words else i.capitalize() for i in n.split())
 
 
@@ -128,45 +132,135 @@ def format_name_title(name_title):
     return f'<a href="https://www.sec.gov/cgi-bin/own-disp?action=getissuer&CIK={cik}">{cell_text}</a>'
 
 
-def format_ticker(t):
+def format_cik(cik):
+    return f'<a href="https://www.sec.gov/cgi-bin/own-disp?action=getissuer&CIK={cik}">{cik}</a>'
+
+
+def format_ticker_html(t):
     return f'<a href="https://finance.yahoo.com/quote/{t}">{t}</a>'
 
 
-def generate_daily_summary_report(report_data):
-    df = pd.DataFrame(report_data)
-    df = df[(df.tx_code == "P") | (df.tx_code == "S")]
-    df["amt"] = df.tx_share*df.tx_price
-    df["sign_pre_share_calc"] = df["tx_code"].map(
-        lambda c: 1 if c == "P" else -1)
-    df["pre_share"] = df.share_post_tx - df.tx_share * df.sign_pre_share_calc
-    df["tx_share_percentage"] = 100*df["tx_share"] / \
-        df["pre_share"]*df["sign_pre_share_calc"]
+def format_buysell(c):
+    code = {"P": "Buy", "S": "Sell"}
+    return code[c] if c in code else "Unknown"
 
-    summary = df.groupby(["cik", "name", "relationship", "title", "ticker", "tx_code", "tx_date", "sign_pre_share_calc"]).agg(
-        {"amt": ["sum"], "tx_share_percentage": ["max"], "share_post_tx": ["max"], "tx_price": ["max"]})
-    summary.sort_values(["sign_pre_share_calc", ("amt", "sum")],
-                        ascending=False, inplace=True)
-    summary.reset_index(inplace=True)
+
+def calc_name_title(row):
+    cell_text = "/".join([capitalize_word(row[("name", "")]),
+                         row[("relationship", "")], capitalize_word(row[("title", "")])])
+    cell_text = cell_text.replace("Chief Financial Officer", "CFO").replace(
+        "Chief Executive Officer", "CEO")
+    cik = row[("cik", "")]
+    return f'<a href="https://www.sec.gov/cgi-bin/own-disp?action=getissuer&CIK={cik}">{cell_text}</a>'
+
+
+def calc_trade_date_range(row):
+    d_min = str(row[('tx_date', 'min')])
+    d_max = str(row[('tx_date', 'max')])
+
+    return d_min[5:] if d_min == d_max else "/".join([d_min[5:], d_max[5:]])
+
+
+def calc_change_in_position(row):
+    share_base = row[("pre_share", "min")] if row[(
+        "tx_code", "")] == "P" else row[("pre_share", "max")]
+
+    if share_base == 0:
+        return "New"
+    else:
+        return '{:,.1f}%'.format(row[("tx_share", "sum")]/share_base*100)
+
+
+def calc_pre_share(row):
+    if row.tx_code not in ("P", "S"):
+        raise ValueError("Cannot handle tx_code: " + row.tx_code)
+
+    return row.share_post_tx - row.tx_share if row.tx_code == "P" else row.share_post_tx + row.tx_share
+
+
+def summary_by_ticker(df):
+    df_summary = group_by_ticker(df)
 
     df_output = pd.DataFrame()
 
-    df_output["Name/Title"] = summary["cik"] + "/" + summary["name"].map(
-        capitalize_word) + "/" + summary["relationship"] + "/" + summary["title"].map(capitalize_word)
-    df_output["Name/Title"] = df_output["Name/Title"].map(format_name_title)
+    df_output["cik"] = df_summary.cik.map(format_cik)
+    df_output["Ticker"] = df_summary.ticker.map(format_ticker_html)
+    df_output["Buy/Sell"] = df_summary["tx_code"].map(format_buysell)
+    df_output["Trade Dollar"] = df_summary[(
+        "amt", "sum")].map('{:,.0f}'.format)
+    df_output["Trade Share"] = df_summary[(
+        "tx_share", "sum")].map('{:,.0f}'.format)
+    df_output["Average Price"] = (df_summary[(
+        "amt", "sum")]/df_summary[("tx_share", "sum")]).map('{:,.2f}'.format)
 
-    df_output["Ticker"] = summary["ticker"].map(format_ticker)
-    df_output["Buy/Sell"] = summary["tx_code"].map(
-        lambda c: "Sell" if c == "S" else "Buy")
+    return df_output
 
-    df_output["Trade Date"] = summary["tx_date"].map(str)
 
-    df_output["Trade Amount"] = summary[("amt", "sum")].map('{:,.0f}'.format)
-    df_output["% Change In Position"] = summary[(
-        "tx_share_percentage", "max")].map(lambda n: '{:,.01f}%'.format(n) if n != np.Inf else 'New')
+def group_by_ticker(df):
+    df_summary = df.groupby(["cik", "ticker", "tx_code", "buy_sell_order"]).agg(
+        {"amt": ["sum"], "tx_share": ["sum"]})
+    df_summary.sort_values(["buy_sell_order", ("amt", "sum")],
+                           ascending=False, inplace=True)
+    df_summary.reset_index(inplace=True)
+    return df_summary
 
-    df_output["Position Post Trade"] = summary[(
-        "share_post_tx", "max")].map('{:,.0f}'.format)
-    df_output["Trade Price"] = summary[(
-        "tx_price", "max")].map('{:,.2f}'.format)
 
-    return df_output, pd.DataFrame(report_data)
+def summary_by_insider(df):
+    df_summary = group_by_insider(df)
+
+    df_output = pd.DataFrame()
+
+    df_output["Name/Title"] = df_summary.apply(calc_name_title, axis=1)
+
+    df_output["Ticker"] = df_summary["ticker"].map(format_ticker_html)
+#    df_output["Added to SP500 on"] = df_summary["date_added_to_sp500"]
+    df_output["SP500 Sector"] = df_summary[("sector","max")].map(lambda n: "Not in SP500" if n is np.nan else n)
+    
+    df_output["Buy/Sell"] = df_summary["tx_code"].map(format_buysell)
+
+    df_output["Trade Amount"] = df_summary[(
+        "amt", "sum")].map('{:,.0f}'.format)
+    df_output["% Change In Position"] = df_summary.apply(
+        calc_change_in_position, axis=1)
+
+    df_output["Average Price"] = (df_summary[(
+        "amt", "sum")]/df_summary[("tx_share", "sum")]).map('{:,.2f}'.format)
+    df_output["Trade Date/Range"] = df_summary.apply(
+        calc_trade_date_range, axis=1)
+
+    return df_output
+
+
+def group_by_insider(df):
+    df_summary = df.groupby(["cik", "name", "relationship", "title", "ticker", "tx_code", "buy_sell_order"]).agg(
+        {"amt": ["sum"], "tx_share": ["sum"], "pre_share": ["min", "max"], "tx_date": ["min", "max"], "tx_price": ["min", "max"], "sector":["max"]})
+    df_summary.sort_values(["buy_sell_order", ("amt", "sum")],
+                           ascending=False, inplace=True)
+    df_summary.reset_index(inplace=True)
+    return df_summary
+
+
+def generate_daily_summary_report(report_data):
+    df = create_raw_df(report_data)
+
+
+    df_ticker = summary_by_ticker(df.copy())
+    df_insider = summary_by_insider(df.copy())
+
+    return df_ticker, df_insider, df
+
+def create_raw_df(report_data):
+    df = pd.DataFrame(report_data)
+
+    df = df[(df.tx_code == "P") | (df.tx_code == "S")]
+    df["amt"] = df.tx_share*df.tx_price
+    df["pre_share"] = df.apply(calc_pre_share, axis=1)
+    df["buy_sell_order"] = df.tx_code.map(lambda c: 1 if c == "P" else 0)
+    df["cik"] = df["cik"].map(lambda x:int(x))
+
+    # add SP500 related columns
+    df_sp500=pd.read_csv(SP500_COMPANY_CSV)
+    df_sp500=df_sp500[['CIK', 'GICS Sector', 'Date first added']]
+    df_sp500.columns=['cik','sector','date_added_to_sp500']
+
+    return df.merge(df_sp500, on='cik', how='left')

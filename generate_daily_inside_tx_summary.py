@@ -19,20 +19,23 @@ if __name__ == '__main__':
         f"generate daily inside trading summray file for date: {report_date}")
 
     try:
-        log.info("extracting report data")
-        process_download(report_date)
-        log.info("createing report data")
+        log.info("1. extracting report data downloaded")
+        if process_download(report_date) == 0: raise ValueError ("Could not find downloaded forms!")
+        log.info("2. createing report")
         rep_data = generate_daily_summary_report_data(report_date)
-        df, df_raw = generate_daily_summary_report(rep_data)
+        df_by_ticker, df_by_insider, df_raw = generate_daily_summary_report(rep_data)
 
         filename = os.path.join(
             REPORTS_FOLDER, f"insider_reports_{report_date}")
 
-        log.info(f"saveing csv and html files: {filename}")
-        df.to_csv(filename+".csv")
-        df_raw.to_csv(filename+"_raw.csv")
+        log.info(f"3. saveing csv and html files: {filename}")
+        df_by_insider.to_csv(filename+".csv", index=False)
+        df_raw.to_csv(filename+"_raw.csv", index=False)
+        with open(filename+"_by_ticker.html", "w") as f:
+            f.write(df_by_ticker.to_html(escape=False))
         with open(filename+".html", "w") as f:
-            f.write(df.to_html(escape=False))
+            f.write(df_by_insider.to_html(escape=False))
+
 
     except Exception as e:
         log.exception(str(e))
